@@ -61,7 +61,13 @@ router.get("/", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req:
     where: { organizationId: req.user!.organizationId },
     orderBy: { createdAt: "desc" },
   });
-  res.json({ invitations });
+
+  const withLinks = invitations.map((inv) => ({
+    ...inv,
+    inviteLink: `${FRONTEND_URL}/accept-invite?token=${inv.token}`,
+  }));
+
+  res.json({ invitations: withLinks });
 });
 
 router.get("/resolve", async (req: Request, res: Response) => {
@@ -182,6 +188,33 @@ router.post("/accept", async (req: Request, res: Response) => {
       return;
     }
     console.error("Accept invite error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/:id", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
+  try {
+    const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+
+    if (!invitation) {
+      res.status(404).json({ error: "Invitation not found" });
+      return;
+    }
+
+    if (invitation.organizationId !== req.user!.organizationId) {
+      res.status(403).json({ error: "Not your organization's invitation" });
+      return;
+    }
+
+    if (invitation.acceptedAt) {
+      res.status(400).json({ error: "Cannot cancel an already accepted invitation" });
+      return;
+    }
+
+    await prisma.invitation.delete({ where: { id: invitation.id } });
+    res.json({ message: "Invitation cancelled" });
+  } catch (err) {
+    console.error("Cancel invite error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

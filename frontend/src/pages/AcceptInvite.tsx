@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Brain, CheckCircle } from 'lucide-react';
+import { Brain, CheckCircle, LogIn, UserPlus } from 'lucide-react';
 
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
@@ -17,10 +17,19 @@ export default function AcceptInvite() {
     hasAccount: boolean;
   } | null>(null);
   const [error, setError] = useState('');
+
+  // Registration fields (new user)
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+
+  // Login fields (existing user, not logged in)
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -39,6 +48,7 @@ export default function AcceptInvite() {
       })
       .then((data) => {
         setInvite(data);
+        setLoginEmail(data.email);
         setLoading(false);
       })
       .catch((err) => {
@@ -47,8 +57,8 @@ export default function AcceptInvite() {
       });
   }, [token]);
 
-  const handleAccept = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleAccept = async (e?: FormEvent) => {
+    e?.preventDefault();
     setSubmitting(true);
     setError('');
 
@@ -86,6 +96,21 @@ export default function AcceptInvite() {
     }
   };
 
+  const handleLoginThenAccept = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoggingIn(true);
+
+    try {
+      await login(loginEmail, loginPassword);
+      setIsLoggingIn(false);
+      setShowLoginForm(false);
+    } catch (err) {
+      setIsLoggingIn(false);
+      setError(err instanceof Error ? err.message : 'Login failed');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -94,7 +119,7 @@ export default function AcceptInvite() {
     );
   }
 
-  if (error) {
+  if (error && !invite) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center max-w-md">
@@ -115,30 +140,54 @@ export default function AcceptInvite() {
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center max-w-md">
           <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">Welcome aboard!</h1>
-          <p className="text-gray-500 text-sm">Redirecting to your dashboard...</p>
+          <p className="text-gray-500 text-sm">You're now a member of <strong>{invite?.organizationName}</strong></p>
+          <p className="text-gray-400 text-xs mt-2">Redirecting to dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // Case 1: User is already logged in with the same email — just accept
-  const isSameUser = currentUser?.email === invite?.email;
+  // Case: Logged in but email doesn't match the invite
+  if (currentUser && currentUser.email !== invite?.email) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center max-w-md">
+          <Brain className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Wrong Account</h1>
+          <p className="text-gray-500 text-sm mb-2">
+            This invitation was sent to <strong>{invite?.email}</strong>
+          </p>
+          <p className="text-gray-400 text-sm mb-4">
+            You're currently logged in as <strong>{currentUser.email}</strong>
+          </p>
+          <Link
+            to="/login"
+            className="block w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          >
+            Sign in with a different account
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-  if (isSameUser) {
+  // Case 1: Logged in, email matches — just show Accept button
+  if (currentUser && currentUser.email === invite?.email) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4">
             <Brain className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {invite?.organizationName}</h1>
-          <p className="text-gray-500 mb-2">You've been invited as <span className="font-medium text-indigo-600">{invite?.role}</span></p>
-          <p className="text-gray-400 text-sm mb-6">{invite?.email}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Join {invite?.organizationName}</h1>
+          <p className="text-gray-500 mb-4">
+            You've been invited as <span className="font-medium text-indigo-600">{invite?.role?.replace('_', ' ')}</span>
+          </p>
 
           <button
-            onClick={handleAccept}
+            onClick={() => handleAccept()}
             disabled={submitting}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 text-lg"
           >
             {submitting ? 'Joining...' : 'Accept Invitation'}
           </button>
@@ -147,57 +196,124 @@ export default function AcceptInvite() {
     );
   }
 
-  // Case 2: User has an account but is not logged in
-  if (invite?.hasAccount) {
+  // Case 2: Has account but not logged in — show inline login
+  if (invite?.hasAccount && !showLoginForm) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4">
-            <Brain className="w-6 h-6 text-white" />
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Join {invite.organizationName}</h1>
+            <p className="text-gray-500">
+              Invited as <span className="font-medium text-indigo-600">{invite.role.replace('_', ' ')}</span>
+            </p>
+            <p className="text-gray-400 text-sm mt-1">{invite.email}</p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {invite?.organizationName}</h1>
-          <p className="text-gray-500 mb-2">You've been invited as <span className="font-medium text-indigo-600">{invite?.role}</span></p>
-          <p className="text-gray-400 text-sm mb-6">{invite?.email}</p>
 
-          <div className="bg-yellow-50 text-yellow-700 text-sm p-3 rounded-lg mb-4">
-            You already have an account. Sign in first, then click the invite link again.
-          </div>
-
-          <Link
-            to={`/login?redirect=/accept-invite?token=${token}`}
-            className="block w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          <button
+            onClick={() => setShowLoginForm(true)}
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-lg"
           >
+            <LogIn className="w-5 h-5" />
             Sign in to accept
-          </Link>
+          </button>
         </div>
       </div>
     );
   }
 
-  // Case 3: New user — show registration form
+  // Inline login form
+  if (invite?.hasAccount && showLoginForm) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Join {invite.organizationName}</h1>
+            <p className="text-gray-500 text-sm mb-1">Invited as {invite.role.replace('_', ' ')}</p>
+            <p className="text-gray-400 text-xs">{invite.email}</p>
+          </div>
+
+          <form onSubmit={handleLoginThenAccept} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-4">
+            {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-gray-50"
+                disabled
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {isLoggingIn ? 'Signing in...' : 'Sign in & Accept'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLoginForm(false)}
+              className="w-full text-gray-500 text-sm hover:text-gray-700"
+            >
+              Back
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Case 3: New user — registration form with pre-filled email
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4">
-            <Brain className="w-6 h-6 text-white" />
+            <UserPlus className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Join {invite?.organizationName}</h1>
-          <p className="text-gray-500 mt-1">You've been invited as <span className="font-medium text-indigo-600">{invite?.role}</span></p>
-          <p className="text-gray-400 text-sm mt-1">{invite?.email}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Join {invite?.organizationName}</h1>
+          <p className="text-gray-500">
+            Invited as <span className="font-medium text-indigo-600">{invite?.role?.replace('_', ' ')}</span>
+          </p>
         </div>
 
         <form onSubmit={handleAccept} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-4">
-          {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>
-          )}
+          {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={invite?.email || ''}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+              disabled
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Your full name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               required
             />
@@ -208,6 +324,7 @@ export default function AcceptInvite() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               minLength={6}
               required

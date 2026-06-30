@@ -223,7 +223,24 @@ export default function Members() {
                   <p className="font-medium text-gray-900">{inv.email}</p>
                   <p className="text-sm text-gray-500">Invited as {inv.role}</p>
                 </div>
-                <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Pending</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Pending</span>
+                  {canManage && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api(`/api/invitations/${inv.id}`, { method: 'DELETE' });
+                          fetchData();
+                        } catch (err) {
+                          alert(err instanceof Error ? err.message : 'Failed to cancel');
+                        }
+                      }}
+                      className="text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
