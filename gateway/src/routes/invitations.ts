@@ -32,6 +32,14 @@ router.post("/", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req
       return;
     }
 
+    const pendingInvite = await prisma.invitation.findFirst({
+      where: { organizationId: req.user!.organizationId, email: data.email, acceptedAt: null },
+    });
+    if (pendingInvite) {
+      res.status(409).json({ error: "A pending invitation already exists for this email" });
+      return;
+    }
+
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 

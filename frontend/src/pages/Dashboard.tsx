@@ -1,6 +1,7 @@
+import { useState, FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LogOut, Brain, Upload, Search, BarChart3, Users, LayoutDashboard } from 'lucide-react';
+import { LogOut, Brain, Upload, Search, BarChart3, Users, LayoutDashboard, Building2, ChevronDown, Plus, X } from 'lucide-react';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,9 +11,43 @@ const navItems = [
   { path: '/members', label: 'Members', icon: Users },
 ];
 
+function getToken() {
+  return localStorage.getItem('nexusiq_token');
+}
+
 export default function Dashboard() {
-  const { user, organization, logout } = useAuth();
+  const { user, organization, organizations, logout, switchOrganization } = useAuth();
   const location = useLocation();
+  const [orgOpen, setOrgOpen] = useState(false);
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
+  const [newOrgName, setNewOrgName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  const handleCreateOrg = async (e: FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    setCreateError('');
+    try {
+      const token = getToken();
+      const res = await fetch('/api/auth/create-org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ organizationName: newOrgName }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create organization');
+      }
+      const data = await res.json();
+      localStorage.setItem('nexusiq_token', data.token);
+      window.location.reload();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -24,10 +59,81 @@ export default function Dashboard() {
             </div>
             <div>
               <span className="font-bold text-lg text-gray-900">NexusIQ</span>
-              <p className="text-xs text-gray-400">{organization?.name}</p>
             </div>
           </Link>
+          {organization && (
+            <div className="relative mt-2">
+              <button
+                onClick={() => setOrgOpen(!orgOpen)}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 w-full"
+              >
+                <Building2 className="w-3 h-3 shrink-0" />
+                <span className="truncate">{organization.name}</span>
+                <ChevronDown className="w-3 h-3 shrink-0 ml-auto" />
+              </button>
+              {orgOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1">
+                  {organizations.map((org) => (
+                    <button
+                      key={org.id}
+                      onClick={() => {
+                        switchOrganization(org.id);
+                        setOrgOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${
+                        org.id === organization.id ? 'text-indigo-600 font-medium' : 'text-gray-600'
+                      }`}
+                    >
+                      <Building2 className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{org.name}</span>
+                      <span className="ml-auto text-[10px] text-gray-400">{org.role.replace('_', ' ')}</span>
+                    </button>
+                  ))}
+                  <div className="border-t border-gray-100 mt-1 pt-1">
+                    <button
+                      onClick={() => { setShowCreateOrg(true); setOrgOpen(false); }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-indigo-600 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Create Organization
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {showCreateOrg && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowCreateOrg(false)}>
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900">Create Organization</h2>
+                <button onClick={() => setShowCreateOrg(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleCreateOrg} className="space-y-4">
+                {createError && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{createError}</div>}
+                <input
+                  type="text"
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="Organization name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                >
+                  {creating ? 'Creating...' : 'Create'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
 
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {

@@ -64,7 +64,7 @@ export default function Members() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [organization?.id]);
 
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault();

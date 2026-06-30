@@ -89,6 +89,38 @@ router.post("/register", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/create-org", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { organizationName } = z.object({ organizationName: z.string().min(1) }).parse(req.body);
+    const orgSlug = organizationName.toLowerCase().replace(/\s+/g, "-");
+
+    const existingSlug = await prisma.organization.findUnique({ where: { slug: orgSlug } });
+    const slug = existingSlug ? `${orgSlug}-${Date.now()}` : orgSlug;
+
+    const org = await prisma.organization.create({ data: { name: organizationName, slug } });
+
+    await prisma.organizationMember.create({
+      data: { userId: req.user!.userId, organizationId: org.id, role: "SUPER_ADMIN" },
+    });
+
+    const token = generateToken({
+      userId: req.user!.userId,
+      email: req.user!.email,
+      organizationId: org.id,
+      role: "SUPER_ADMIN",
+    });
+
+    res.status(201).json({ token, organization: { id: org.id, name: org.name, role: "SUPER_ADMIN" } });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Invalid input", details: err.issues });
+      return;
+    }
+    console.error("Create org error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const data = loginSchema.parse(req.body);
@@ -225,6 +257,37 @@ router.patch("/members/:userId/role", authMiddleware, requireRole("ADMIN", "SUPE
       return;
     }
     console.error("Change role error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/switch-org", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { organizationId } = z.object({ organizationId: z.string().uuid() }).parse(req.body);
+
+    const membership = await prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId, userId: req.user!.userId } },
+    });
+
+    if (!membership) {
+      res.status(403).json({ error: "Not a member of this organization" });
+      return;
+    }
+
+    const token = generateToken({
+      userId: req.user!.userId,
+      email: req.user!.email,
+      organizationId,
+      role: membership.role,
+    });
+
+    res.json({ token, organization: { id: organizationId, role: membership.role } });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Invalid input", details: err.issues });
+      return;
+    }
+    console.error("Switch org error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
