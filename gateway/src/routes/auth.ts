@@ -197,7 +197,7 @@ const changeRoleSchema = z.object({
 router.patch("/members/:userId/role", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
   try {
     const data = changeRoleSchema.parse(req.body);
-    const targetUserId = req.params.userId;
+    const targetUserId = String(req.params.userId);
 
     const membership = await prisma.organizationMember.findUnique({
       where: { organizationId_userId: { organizationId: req.user!.organizationId, userId: targetUserId } },
@@ -225,6 +225,38 @@ router.patch("/members/:userId/role", authMiddleware, requireRole("ADMIN", "SUPE
       return;
     }
     console.error("Change role error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/members/:userId", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
+  try {
+    const targetUserId = String(req.params.userId);
+    const currentUserId = req.user!.userId;
+
+    if (targetUserId === currentUserId) {
+      res.status(400).json({ error: "Cannot remove yourself. Ask another admin." });
+      return;
+    }
+
+    const membership = await prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId: req.user!.organizationId, userId: targetUserId } },
+    });
+
+    if (!membership) {
+      res.status(404).json({ error: "Member not found" });
+      return;
+    }
+
+    if (membership.role === "SUPER_ADMIN" && req.user!.role !== "SUPER_ADMIN") {
+      res.status(403).json({ error: "Only Super Admins can remove a Super Admin" });
+      return;
+    }
+
+    await prisma.organizationMember.delete({ where: { id: membership.id } });
+    res.json({ message: "Member removed from organization" });
+  } catch (err) {
+    console.error("Remove member error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

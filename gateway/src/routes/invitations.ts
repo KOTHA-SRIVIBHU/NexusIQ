@@ -194,7 +194,7 @@ router.post("/accept", async (req: Request, res: Response) => {
 
 router.delete("/:id", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
   try {
-    const invitation = await prisma.invitation.findUnique({ where: { id: req.params.id } });
+    const invitation = await prisma.invitation.findUnique({ where: { id: String(req.params.id) } });
 
     if (!invitation) {
       res.status(404).json({ error: "Invitation not found" });

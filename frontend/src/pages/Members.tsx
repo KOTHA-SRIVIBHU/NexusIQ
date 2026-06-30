@@ -94,6 +94,16 @@ export default function Members() {
     }
   };
 
+  const handleRemove = async (userId: string, name: string) => {
+    if (!confirm(`Remove ${name} from the organization?`)) return;
+    try {
+      await api(`/api/auth/members/${userId}`, { method: 'DELETE' });
+      fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to remove member');
+    }
+  };
+
   const copyLink = () => {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
@@ -184,13 +194,23 @@ export default function Members() {
               </div>
               <div className="flex items-center gap-2">
                 {canManage && member.role !== 'SUPER_ADMIN' ? (
-                  <select
-                    value={member.role}
-                    onChange={(e) => handleRoleChange(member.id, e.target.value)}
-                    className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                  >
-                    {roleOptions.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
-                  </select>
+                  <>
+                    <select
+                      value={member.role}
+                      onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                      className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    >
+                      {roleOptions.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                    </select>
+                    {currentUser?.id !== member.id && (
+                      <button
+                        onClick={() => handleRemove(member.id, member.name)}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                     member.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-700' :
