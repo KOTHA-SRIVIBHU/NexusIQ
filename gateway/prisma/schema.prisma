@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       OrganizationMember[]
+  folders       Folder[]
+  folderPerms   FolderPermission[]
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships OrganizationMember[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  role           Role         @default(VIEWER)
+  organizationId String
+  userId         String
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+}
+
+model Folder {
+  id             String   @id @default(uuid())
+  name           String
+  organizationId String
+  parentId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent       Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children     Folder[]     @relation("FolderHierarchy")
+  permissions  FolderPermission[]
+}
+
+model FolderPermission {
+  id             String @id @default(uuid())
+  role           Role   @default(VIEWER)
+  folderId       String
+  organizationId String
+
+  folder       Folder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, organizationId])
+}

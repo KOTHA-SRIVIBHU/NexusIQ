@@ -1,0 +1,11 @@
+{
+  "name": "nexusiq",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "frontend:dev": "cd frontend && npm run dev",
+    "gateway:dev": "cd gateway && npm run dev",
+    "ml:dev": "cd ml-engine && source venv/bin/activate && uvicorn src.main:app --reload --port 8000",
+    "dev": "echo 'Run: npm run frontend:dev | gateway:dev | ml:dev'"
+  }
+}
