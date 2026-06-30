@@ -7,7 +7,7 @@ export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const navigate = useNavigate();
-  const { user: currentUser, login } = useAuth();
+  const { user: currentUser, login, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [invite, setInvite] = useState<{
@@ -160,12 +160,28 @@ export default function AcceptInvite() {
           <p className="text-gray-400 text-sm mb-4">
             You're currently logged in as <strong>{currentUser.email}</strong>
           </p>
-          <Link
-            to="/login"
-            className="block w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          <div className="space-y-2">
+            <Link
+              to={`/login?redirect=/accept-invite?token=${token}`}
+              className="block w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Sign in with a different account
+            </Link>
+            {!invite?.hasAccount && (
+              <button
+                onClick={() => { logout(); navigate(`/accept-invite?token=${token}`); }}
+                className="block w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Create a new account to accept
+              </button>
+            )}
+          </div>
+          <button
+            onClick={logout}
+            className="mt-3 text-sm text-gray-400 hover:text-gray-600 underline"
           >
-            Sign in with a different account
-          </Link>
+            Sign out first
+          </button>
         </div>
       </div>
     );

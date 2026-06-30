@@ -70,7 +70,10 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
+            <Link
+              to={redirect.startsWith('/accept-invite') ? redirect : '/register'}
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
+            >
               Create one
             </Link>
           </p>
