@@ -182,4 +182,35 @@ router.get("/me", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/members", async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const { verify } = await import("jsonwebtoken");
+    const token = authHeader.slice(7);
+    const decoded = verify(token, process.env.JWT_SECRET || "dev-secret-change-in-production") as any;
+
+    const members = await prisma.organizationMember.findMany({
+      where: { organizationId: decoded.organizationId },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    res.json({
+      members: members.map((m) => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        role: m.role,
+      })),
+    });
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
+
 export default router;

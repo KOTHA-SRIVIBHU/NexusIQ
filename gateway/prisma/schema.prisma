@@ -17,6 +17,7 @@ model Organization {
   members       OrganizationMember[]
   folders       Folder[]
   folderPerms   FolderPermission[]
+  invitations   Invitation[]
 }
 
 enum Role {
@@ -62,6 +63,22 @@ model Folder {
   parent       Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id])
   children     Folder[]     @relation("FolderHierarchy")
   permissions  FolderPermission[]
+}
+
+model Invitation {
+  id             String   @id @default(uuid())
+  email          String
+  role           Role     @default(VIEWER)
+  token          String   @unique
+  organizationId String
+  acceptedAt     DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([email])
 }
 
 model FolderPermission {

@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
+import invitationRoutes from "./routes/invitations.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 dotenv.config();
@@ -21,6 +22,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/invitations", invitationRoutes);
 
 app.get("/api/protected", authMiddleware, (req, res) => {
   res.json({ message: "You are authenticated", user: req.user });
