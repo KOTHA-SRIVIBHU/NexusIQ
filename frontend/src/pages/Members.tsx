@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Brain, Copy, Check, X, UserPlus, Users } from 'lucide-react';
+import { useAuth, type UserWithRole } from '../context/AuthContext';
+import { Brain, Copy, Check, X, UserPlus, Users, Shield } from 'lucide-react';
 
 interface Member {
   id: string;
@@ -14,12 +14,32 @@ interface Invitation {
   email: string;
   role: string;
   inviteLink: string;
-  expiresAt: string;
   acceptedAt: string | null;
 }
 
+function getToken() {
+  return localStorage.getItem('nexusiq_token');
+}
+
+async function api(url: string, options: RequestInit = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
 export default function Members() {
-  const { organization, user } = useAuth();
+  const { organization } = useAuth();
+  const currentUser = useAuth().user as UserWithRole | null;
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [showInvite, setShowInvite] = useState(false);
@@ -29,22 +49,18 @@ export default function Members() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
 
+  const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+
   const fetchData = async () => {
-    const token = localStorage.getItem('nexusiq_token');
-    const headers = { Authorization: `Bearer ${token}` };
-
-    const [membersRes, invitesRes] = await Promise.all([
-      fetch('/api/auth/members', { headers }),
-      fetch('/api/invitations', { headers }),
-    ]);
-
-    if (membersRes.ok) {
-      const data = await membersRes.json();
-      setMembers(data.members);
-    }
-    if (invitesRes.ok) {
-      const data = await invitesRes.json();
-      setInvitations(data.invitations);
+    try {
+      const [membersData, invitesData] = await Promise.all([
+        api('/api/auth/members'),
+        api('/api/invitations'),
+      ]);
+      setMembers(membersData.members);
+      setInvitations(invitesData.invitations);
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
     }
   };
 
@@ -53,26 +69,28 @@ export default function Members() {
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    const token = localStorage.getItem('nexusiq_token');
-
     try {
-      const res = await fetch('/api/invitations', {
+      const data = await api('/api/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to invite');
-      }
-
-      const data = await res.json();
       setInviteLink(data.inviteLink);
       setInviteEmail('');
       fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Failed to invite');
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      await api(`/api/auth/members/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: newRole }),
+      });
+      fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to change role');
     }
   };
 
@@ -82,7 +100,7 @@ export default function Members() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isAdmin = user && (user as any).role !== 'VIEWER' && (user as any).role !== 'EDITOR';
+  const roleOptions = ['VIEWER', 'EDITOR', 'ADMIN'];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -91,7 +109,7 @@ export default function Members() {
           <h1 className="text-2xl font-bold text-gray-900">Members</h1>
           <p className="text-gray-500 mt-1">{organization?.name}</p>
         </div>
-        {isAdmin && (
+        {canManage && (
           <button
             onClick={() => { setShowInvite(!showInvite); setInviteLink(''); }}
             className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
@@ -128,9 +146,7 @@ export default function Members() {
                 onChange={(e) => setInviteRole(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
               >
-                <option value="VIEWER">Viewer</option>
-                <option value="EDITOR">Editor</option>
-                <option value="ADMIN">Admin</option>
+                {roleOptions.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
               </select>
               <button
                 type="submit"
@@ -144,7 +160,7 @@ export default function Members() {
           {inviteLink && (
             <div className="mt-4 p-3 bg-gray-50 rounded-lg flex items-center gap-2">
               <span className="text-sm text-gray-600 flex-1 truncate">{inviteLink}</span>
-              <button onClick={copyLink} className="text-indigo-600 hover:text-indigo-700">
+              <button onClick={copyLink} className="text-indigo-600 hover:text-indigo-700 shrink-0">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
@@ -166,25 +182,38 @@ export default function Members() {
                 <p className="font-medium text-gray-900">{member.name}</p>
                 <p className="text-sm text-gray-500">{member.email}</p>
               </div>
-              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                member.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-700' :
-                member.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' :
-                member.role === 'EDITOR' ? 'bg-blue-100 text-blue-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {member.role.replace('_', ' ')}
-              </span>
+              <div className="flex items-center gap-2">
+                {canManage && member.role !== 'SUPER_ADMIN' ? (
+                  <select
+                    value={member.role}
+                    onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                    className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  >
+                    {roleOptions.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                  </select>
+                ) : (
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    member.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-700' :
+                    member.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' :
+                    member.role === 'EDITOR' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {member.role === 'SUPER_ADMIN' && <Shield className="w-3 h-3 inline mr-1" />}
+                    {member.role.replace('_', ' ')}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {invitations.length > 0 && (
+      {invitations.filter((i) => !i.acceptedAt).length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm mt-6">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-2 text-gray-900 font-semibold">
               <Users className="w-5 h-5" />
-              Pending Invitations ({invitations.length})
+              Pending Invitations ({invitations.filter((i) => !i.acceptedAt).length})
             </div>
           </div>
           <div className="divide-y divide-gray-100">
@@ -194,9 +223,7 @@ export default function Members() {
                   <p className="font-medium text-gray-900">{inv.email}</p>
                   <p className="text-sm text-gray-500">Invited as {inv.role}</p>
                 </div>
-                <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
-                  Pending
-                </span>
+                <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Pending</span>
               </div>
             ))}
           </div>

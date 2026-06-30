@@ -1,48 +1,49 @@
 import { Router, Request, Response } from "express";
 import { randomBytes } from "crypto";
 import prisma from "../lib/prisma.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, generateToken } from "../middleware/auth.js";
 import { requireRole } from "../middleware/rbac.js";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const router = Router();
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(["VIEWER", "EDITOR", "ADMIN"]),
 });
 
+const acceptSchema = z.object({
+  token: z.string(),
+  name: z.string().min(1).optional(),
+  password: z.string().min(6).optional(),
+});
+
 router.post("/", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
   try {
     const data = inviteSchema.parse(req.body);
-    const organizationId = req.user!.organizationId;
 
     const existingMember = await prisma.organizationMember.findFirst({
-      where: { organizationId, user: { email: data.email } },
+      where: { organizationId: req.user!.organizationId, user: { email: data.email } },
     });
     if (existingMember) {
-      res.status(409).json({ error: "User is already a member of this organization" });
+      res.status(409).json({ error: "User is already a member" });
       return;
     }
 
     const token = randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const invitation = await prisma.invitation.create({
-      data: {
-        email: data.email,
-        role: data.role,
-        token,
-        organizationId,
-        expiresAt,
-      },
+      data: { email: data.email, role: data.role, token, organizationId: req.user!.organizationId, expiresAt },
     });
 
     res.status(201).json({
       id: invitation.id,
       email: invitation.email,
       role: invitation.role,
-      inviteLink: `${req.protocol}://${req.get("host")}/accept-invite?token=${token}`,
+      inviteLink: `${FRONTEND_URL}/accept-invite?token=${token}`,
       expiresAt: invitation.expiresAt,
     });
   } catch (err) {
@@ -90,23 +91,21 @@ router.get("/resolve", async (req: Request, res: Response) => {
     return;
   }
 
+  const existingUser = await prisma.user.findUnique({ where: { email: invitation.email } });
+
   res.json({
     email: invitation.email,
     organizationName: invitation.organization.name,
+    organizationId: invitation.organizationId,
     role: invitation.role,
     token: invitation.token,
+    hasAccount: !!existingUser,
   });
 });
 
 router.post("/accept", async (req: Request, res: Response) => {
   try {
-    const schema = z.object({
-      token: z.string(),
-      name: z.string().min(1).optional(),
-      password: z.string().min(6).optional(),
-    });
-    const data = schema.parse(req.body);
-
+    const data = acceptSchema.parse(req.body);
     const invitation = await prisma.invitation.findUnique({
       where: { token: data.token },
       include: { organization: true },
@@ -129,13 +128,11 @@ router.post("/accept", async (req: Request, res: Response) => {
 
     const existingUser = await prisma.user.findUnique({ where: { email: invitation.email } });
 
+    // If no account and no name/password provided, error
     if (!existingUser && (!data.name || !data.password)) {
       res.status(400).json({ error: "Name and password required to create account" });
       return;
     }
-
-    const { generateToken } = await import("../middleware/auth.js");
-    const bcrypt = await import("bcryptjs");
 
     let userId: string;
     if (existingUser) {
@@ -144,7 +141,6 @@ router.post("/accept", async (req: Request, res: Response) => {
       const alreadyMember = await prisma.organizationMember.findUnique({
         where: { organizationId_userId: { organizationId: invitation.organizationId, userId } },
       });
-
       if (alreadyMember) {
         res.status(409).json({ error: "Already a member of this organization" });
         return;
@@ -152,21 +148,13 @@ router.post("/accept", async (req: Request, res: Response) => {
     } else {
       const hashedPassword = await bcrypt.hash(data.password!, 10);
       const newUser = await prisma.user.create({
-        data: {
-          email: invitation.email,
-          password: hashedPassword,
-          name: data.name!,
-        },
+        data: { email: invitation.email, password: hashedPassword, name: data.name! },
       });
       userId = newUser.id;
     }
 
     await prisma.organizationMember.create({
-      data: {
-        userId,
-        organizationId: invitation.organizationId,
-        role: invitation.role,
-      },
+      data: { userId, organizationId: invitation.organizationId, role: invitation.role },
     });
 
     await prisma.invitation.update({
@@ -181,9 +169,11 @@ router.post("/accept", async (req: Request, res: Response) => {
       role: invitation.role,
     });
 
+    const user = existingUser || await prisma.user.findUnique({ where: { id: userId } });
+
     res.json({
       token,
-      user: { id: userId, email: invitation.email, name: existingUser?.name || data.name },
+      user: { id: userId, email: invitation.email, name: user!.name },
       organization: { id: invitation.organizationId, name: invitation.organization.name },
     });
   } catch (err) {

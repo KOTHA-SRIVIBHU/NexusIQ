@@ -1,7 +1,8 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma.js";
-import { generateToken } from "../middleware/auth.js";
+import { generateToken, authMiddleware } from "../middleware/auth.js";
+import { requireRole } from "../middleware/rbac.js";
 import { z } from "zod";
 
 const router = Router();
@@ -29,7 +30,11 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const orgSlug = data.organizationName.toLowerCase().replace(/\s+/g, "-");
+    let orgSlug = data.organizationName.toLowerCase().replace(/\s+/g, "-");
+    const existingSlug = await prisma.organization.findUnique({ where: { slug: orgSlug } });
+    if (existingSlug) {
+      orgSlug = `${orgSlug}-${Date.now()}`;
+    }
 
     const user = await prisma.$transaction(async (tx) => {
       const org = await tx.organization.create({
@@ -139,77 +144,88 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/me", async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Unauthorized" });
+router.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.userId },
+    include: {
+      memberships: {
+        include: { organization: true },
+      },
+    },
+  });
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
     return;
   }
 
-  try {
-    const { verify } = await import("jsonwebtoken");
-    const token = authHeader.slice(7);
-    const decoded = verify(token, process.env.JWT_SECRET || "dev-secret-change-in-production") as any;
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    },
+    organizations: user.memberships.map((m) => ({
+      id: m.organization.id,
+      name: m.organization.name,
+      role: m.role,
+    })),
+  });
+});
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      include: {
-        memberships: {
-          include: { organization: true },
-        },
-      },
+router.get("/members", authMiddleware, async (req: Request, res: Response) => {
+  const members = await prisma.organizationMember.findMany({
+    where: { organizationId: req.user!.organizationId },
+    include: { user: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  res.json({
+    members: members.map((m) => ({
+      id: m.user.id,
+      name: m.user.name,
+      email: m.user.email,
+      role: m.role,
+    })),
+  });
+});
+
+const changeRoleSchema = z.object({
+  role: z.enum(["VIEWER", "EDITOR", "ADMIN"]),
+});
+
+router.patch("/members/:userId/role", authMiddleware, requireRole("ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
+  try {
+    const data = changeRoleSchema.parse(req.body);
+    const targetUserId = req.params.userId;
+
+    const membership = await prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId: req.user!.organizationId, userId: targetUserId } },
     });
 
-    if (!user) {
-      res.status(404).json({ error: "User not found" });
+    if (!membership) {
+      res.status(404).json({ error: "Member not found" });
       return;
     }
 
-    res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-      organizations: user.memberships.map((m) => ({
-        id: m.organization.id,
-        name: m.organization.name,
-        role: m.role,
-      })),
-    });
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
+    if (membership.role === "SUPER_ADMIN" && req.user!.role !== "SUPER_ADMIN") {
+      res.status(403).json({ error: "Only Super Admins can change another Super Admin's role" });
+      return;
+    }
 
-router.get("/members", async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const { verify } = await import("jsonwebtoken");
-    const token = authHeader.slice(7);
-    const decoded = verify(token, process.env.JWT_SECRET || "dev-secret-change-in-production") as any;
-
-    const members = await prisma.organizationMember.findMany({
-      where: { organizationId: decoded.organizationId },
-      include: { user: true },
-      orderBy: { createdAt: "asc" },
+    const updated = await prisma.organizationMember.update({
+      where: { id: membership.id },
+      data: { role: data.role },
     });
 
-    res.json({
-      members: members.map((m) => ({
-        id: m.user.id,
-        name: m.user.name,
-        email: m.user.email,
-        role: m.role,
-      })),
-    });
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
+    res.json({ id: targetUserId, role: updated.role });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Invalid input", details: err.issues });
+      return;
+    }
+    console.error("Change role error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
