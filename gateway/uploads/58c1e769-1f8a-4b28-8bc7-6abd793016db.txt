@@ -1,0 +1,906 @@
+
+Search in video
+0:00
+hey everyone welcome back to take you forward we will be starting off with the new pattern that is dp on strings okay
+0:07
+generically in dp on strings you will find problems of comparison uh
+0:14
+you'll find problems of replacements uh edits etc so these kind of patterns is what we
+0:21
+will be solving and we'll be doing a bunch of problems and again when we complete dp on strings you can solve any
+0:27
+problem on dp on strings that's my guarantee so to start off with let's take the first problem which is longest
+0:33
+common subsequence yes but if you're understanding that let's understand this term subsequence
+0:41
+in depth what is subsequence so for it abc a is a subsequence
+0:48
+b is a subsequence c is a subsequence a b is a subsequence bc is a subsequence ac is a subsequence abc is a subsequence
+0:54
+empty string is also a subsequence what is a subsequence in a string s
+1:01
+you see bc repetitive bc is consecutive
+1:07
+and maintaining the order of b and c maintaining the order of b and c you see ac
+1:14
+ac is not consecutive but maintaining the order of ac abc is consecutive and maintaining the
+1:21
+order very simple it can be consecutive it cannot be
+1:27
+consecutive but as long as it maintains the order
+1:32
+maintains the order in the string then you can call it as a
+1:38
+subsequence right and in order to print all these
+1:44
+subsequences you might be thinking sorry how do i print all the subsequences so
+1:49
+in order to print all the subsequences you can use either power set
+1:56
+i have a video on this or you can use the recursion method again i have a
+2:01
+video on both of them and if you watch the video for any given string like this string is of a length 3
+2:08
+and the number of subsequences is 8 including the empty one where i say i do
+2:14
+not pick any one so for a string of length to n the number of subsequences
+2:20
+is 2 to the power n okay so that is what subsequences mean
+2:26
+so what is longest common subsequence what does this signify what does this
+2:31
+term signify so i can say over here a d e is a subsequence a d b
+2:38
+is a subsequence a e c is a subsequence b b c is a subsequence e c is a
+2:45
+subsequence b c the subsequence there can be 2 to the power 5 subsequences 32
+2:51
+different subsequences similarly over here there can be 32 subsequences
+2:57
+okay so i can say this guy can generate 32 subsequences
+3:10
+and so on and this guy can also generate 32 subsequences
+3:16
+correct naming d c a d b d c
+3:23
+d c d a d d d b and so on now what you need to do is you need to
+3:29
+take this a does this a exist yes so as of now the common subsequence one of the
+3:35
+common subsequences is a does d exist yes one of the common subsequences is d does a d exist
+3:42
+no so a is not a common subsequence does ac no that's a b no similarly you have to go on writing and
+3:49
+you will see a d b exists over here a d b
+3:56
+and a d b also exist over here so you will find adb is common in both of them
+4:03
+and you have to find among all common subsequences which one is the longest so
+4:08
+adb is the longest that you'll find yeah there was a there was d but you need the
+4:13
+longest so the longest is a db and what is the length of this
+4:18
+three the length of this is three so you need to tell me the length of this which is
+4:25
+three so that's the question pretty straightforward now you might think strava let's apply brute force
+4:33
+okay that's correct what's the brute force generate all the 32 subsequences generate all the 32 subsequences on this
+4:40
+side and then do a linear comparison of both and find manually which one is the
+4:45
+longest but in order to do that you have to actually generate all the 32 subsequences because generate
+4:53
+take one compare take one compare take one compare take one compare and get the
+4:59
+longest among them so that's gonna be two to the power n because you have to generate all of the subsequences
+5:04
+exponential in nature so the brute force is going to be exponential in nature
+5:14
+hence a pattern that i will not follow but yeah if you want to generate all the
+5:19
+subsequences feel free to watch out the powerset video or the recursion video that i will be leaving the link in the description
+5:26
+okay so if not brute force then what then my brain says okay
+5:32
+let's do some let's uh generate all the subsequences and try to do comparisons okay
+5:39
+generate that's what we did generate all subsequences
+5:45
+and compare onway that's what i'll think and that's a
+5:51
+standard way like you have to generate all subsequences that compare on way that's a standard standard way that we
+5:58
+generally do in a recursion or like and on dp on strings i'll be telling you
+6:03
+about that so you will be tending to follow a recursion method
+6:08
+where you will not generate these instead of that you you will use
+6:14
+parameters to generate them i will be showing you how so first
+6:20
+let's understand uh something uh in deep let's take an example super quickly uh a
+6:25
+c d and c e d okay assume these are the two strings that we are looking to solve
+6:32
+a c d and ced okay now if you go to generate all the substrings will be a c
+6:38
+d a c a d c d a c d and over here will be c e d c
+6:44
+e c d and e d c e d then you figure out the longest being c d and c d so thereby
+6:51
+this is the longest which is of length two but if you generate this that doesn't make sense that's where we
+6:57
+will try to write some recurrence yes we'll try to write some recurrence
+7:03
+that probably gives me the answer through the way through the way is my question okay
+7:09
+so assume you're solving this entire portion this entire string and entire
+7:15
+string okay and generically generically what are the rules to write the records let's let's
+7:22
+quickly just jolt down the rules to write recurrence and then we will try to follow those parts
+7:29
+express everything in terms of indexes explore
+7:36
+possibility on that index that's it explore possibility on that index is
+7:41
+what we do take the best among them because they're
+7:46
+looking for longest take the best among them these are the three rules that you
+7:53
+generally follow now express everything in terms of index
+7:58
+okay so either you can carry this entire string or you can say hey listen
+8:04
+probably i can have a pointer here let's understand probably i can have a pointer here which is somewhere around index
+8:12
+two and f two signifies the string
+8:18
+till index two okay totally you can say i can keep a pointer
+8:23
+here which is again index two f of two again signifies the string till index
+8:30
+two something to observe a single index cannot express both the strings a single
+8:39
+index cannot express both the strings thereby i will have to represent them by
+8:47
+two indexes i have to represent them by two indexes where
+8:52
+index one represents this guy index two represents this guy that's the
+8:59
+first modification that you have to do in the rules since you're dealing with couple of
+9:04
+strings you express them in terms of index 1 and index 2 very simple like in
+9:10
+all the array problems you express everything in terms of index because there was an index then you
+9:16
+decided to pick not pick or similar kind of things you did over here we will have index 1 and index 2 which will be
+9:23
+representing so can i say if i omit this
+9:28
+and i write this something as f of 2 comma 2 or rather let's write it in a
+9:33
+smaller way f of 2 comma 2 what does this represent tell me the lcs
+9:40
+of string 0 to 2 string 1 0 to 2 and string 2
+9:47
+0 to 2 this is what this f of 2 2 will represent so we have understood the expressing term we've
+9:54
+understood the expressing term that's done if i'm writing something as f of let's
+9:59
+say 2 and 5 what does this signify
+10:05
+this signifies give me the longest common sig longest common subsequence
+10:10
+between string s1 0 to 2 and string s to zero to five a smaller
+10:18
+string and a larger string this signifies this so i hope you have got an idea what i'm meaning to say by index
+10:24
+one and index two okay so this we have figured out now time to explore all
+10:30
+possibilities because if you do not explore all possibilities we will be having an issue okay so let's
+10:36
+try to explore all possibilities okay let's let's try to write them
+10:45
+so can i say this can i say this that okay striveless
+10:50
+i'm having the string acd and ced
+10:57
+and i'm having a couple of pointers over here and this is index one and this is index two
+11:04
+so a very straightforward question is
+11:09
+if they are matching because this d like do comparisons character wise remember
+11:14
+this do comparisons character wise
+11:21
+so this d and this d is matching that's something we can see this d and this d
+11:27
+is matching so can i say if i just do not think of these things
+11:33
+they and this d and this d is matching can i say i got a subsequence of length one i got
+11:40
+a subsequence of length one that is d which is common in both of them again make sense thereby i can probably say
+11:46
+one of the possibilities that i can have is i got one subsequence of length
+11:52
+and then i shrink the string and i shrink the string and say the new string
+11:57
+is ac and ce in which probably you can find an answer in which you can probably find an answer
+12:04
+so does that make sense it does because if these guys are matching
+12:09
+now you just have to take these two strings and you have to ask them what's the common what's the longest common in them
+12:16
+because i've done for d which is one what is ac i send you what is ac this
+12:22
+index will come here which is index one so i can say ac is index one over here
+12:28
+c e is index two over here which is nothing but f of one comma one
+12:33
+f of one comma one y f of one comma one very simple because
+12:39
+one for this t and i shrink the string this is the string so that's f of one which
+12:46
+means zero to one is the string and this d you took so again zero to one so f of
+12:51
+another one is there that's how you can do it if they are matching so if character matches
+13:01
+index one matches with index two can i write this as
+13:07
+i will add one to the answer and i will reduce index by one and the other index by one as well can i
+13:14
+say this i'll reduce index one by one and index two by one as well and this is
+13:20
+going to be the recurrence if both of the guys are matching okay so we
+13:26
+have we've probably done one possibility you've done one possibility over here
+13:31
+which is if both of them are matching then it's kind of very simple enough you say 1 plus f of
+13:38
+index 1 minus 1 index to minus 1 and that's going to be the case if
+13:45
+match on indexes if match on indexes that's one
+13:50
+possibility okay now what about the other possibility because what if they do not match because
+13:56
+in all the string problems you know in all the comparison of string problems you'll see
+14:01
+match and not match match and not match in previous problems of arrays it was
+14:07
+it was pick not pick over it will be match not match so for
+14:13
+matches you will generally add to the answer and it'll move back by index in matches you'll generally add the answer
+14:19
+and move back by index similar to pick similar to pick when you moved one back one back
+14:25
+okay so what about non-match let's talk about non-match what if they are not matching yes what if they're not
+14:31
+matching because in the next step it will be ac and ce what if they are not matching let's see
+14:38
+if i have ac and ce and they are not matching something i know for sure is
+14:44
+if i go ahead this c will match with the c but as of now
+14:50
+my index 1 is standing here my index 2 is standing here so
+14:56
+how will i go and compare this cnc because as if i'm standing at e if i move them both back
+15:02
+i will miss out on a comparison of c i'll miss out on a comparison of c right
+15:08
+or what if there was an e here so this e would have matched with the c
+15:13
+so i i can also miss out on the comparison of e e as well you understand if i write e c
+15:19
+then what will happen this c and this c might match because they're
+15:24
+standing in the other places or this e and this e might might not match any day
+15:30
+because they're standing at opposite standing at different places thereby you have to apply your brain
+15:37
+you have to apply your brain in such a way that you explore both the possibilities yes what are the both the
+15:43
+possibilities you say hey listen for example it's just to understand let's do it easy
+15:50
+you will say hey listen let's do one thing let's move only one guy
+15:56
+like okay but which guy let's try both because in both the directions you might find the answer i'd
+16:01
+like okay i'll be like okay this c did not match with e
+16:07
+did not match but this e might match with the c i'll be like okay this c did not match
+16:12
+with e but this e might match with the c let's do one thing
+16:18
+let's move the index one only let's keep the
+16:24
+index two as it is and since they're not matching the answer
+16:29
+added to the longest will be zero okay make sense i be like that that does make sense because i'll just move this
+16:37
+index i'll keep it because this guy might match in future with these guys okay
+16:42
+but then you'll miss out on this c i'm like okay let's take the other way as well
+16:49
+when i say okay listen let's keep ec that means let's keep index one
+16:55
+let's move c let's move index too right let's move index to here
+17:02
+okay make sense now the cnc might match up now the cnc might match out why
+17:08
+because of match on indexes in the next step e and d will go on match on indexes c
+17:15
+and c will go on match of indexes and over here there's a plus zero that's sure but did you understand what i tried
+17:22
+to do i said hey listen if they're not matching let's either move this
+17:28
+or either move this there's the both the possibilities like okay does make sense so can i say
+17:38
+if not match then the answer added will be zero for sure because there is no
+17:44
+length that you are matching okay plus f of
+17:50
+index minus 1 is what you will go sorry index 1 minus 1 is what you will
+17:55
+go it will keep the index 2 or you will go you will keep the index one and it will
+18:02
+go the index to minus one and you will take the max of
+18:07
+both the guys yes you will take the max of either this guy or either this guy
+18:12
+and you can easily just move this or you can easily move this and the max of this
+18:19
+and this is what you will get the answer like either solve this guy or either solve this guy
+18:26
+whichever gives you the maximum answer is going to be the max answer this is what if not match will be
+18:33
+so we have also explored all possibilities on that index
+18:40
+take the best among them you're taking the best among them you either take on match you either take this and they do
+18:46
+not match you take the best of this or this so also done take the
+18:52
+best among them so that's how you can easily think in terms of dp on strings
+18:58
+i'll be drawing the recursion tree don't worry about that but that's how you can easily think of dp on strings what about
+19:03
+the base case we will think about that but let's try to write as of now the code in short and then i'll think about
+19:09
+the base case so i'll be like okay f of index yes f of index
+19:15
+one and index two is there that's for sure let's forget about the base case what are the cases
+19:21
+possibilities match or not match okay so if they match
+19:27
+can i say if they match then it will be index one equal to equal to index two
+19:33
+it can be and what will be the answer the answer is very simple one of f off
+19:39
+index one will also move index two will also move and you can easily return them
+19:45
+so if this line does not if this line executes the program returns over here and it
+19:50
+goes back the rest lines will never execute remember if this if executes the program returns over here and these
+19:57
+lines will not be executed so i'll write the next lines will be the next lines the next lines will be very simple
+20:04
+i will be saying either if this is not happening if this is not happening thereby no
+20:11
+match if no match can i say the answer will be 0 plus
+20:16
+i will move the index one by one and i'll move the index to minus one sorry index so i'll keep it like this
+20:23
+or i will be keeping the index one and i'll move the index two by one and i'll take the max
+20:30
+of the best of them the best of them and that's what i will return
+20:37
+if they're matching it's fine if they're not matching then take the max of these couple of guys and return so if i just
+20:42
+write it in a sophisticated way in a sophisticated way it will look something like this like zero plus zero
+20:48
+doesn't have any significance this one not much this one match as simple as it can
+20:55
+get so that's what about that was about the possibilities but what is the other thing that's remaining
+21:01
+that's base case yes that's something which is base case you think about the base case
+21:07
+so can i say when will the base case come okay let's come back and see when will the base case come
+21:13
+can i say i'm a t i'm a t at this portion what will happen
+21:19
+you will say i'll do plus one because because this e
+21:24
+matches with the c and thereby this index will go minus one
+21:31
+and the other one will also go minus one but if if this guy goes minus one
+21:37
+it will go to negative because this was the zeroth index it will go to negative and if it
+21:42
+goes to negative it's over and similarly over here this will happen
+21:48
+they are matching so index 2 will go to negative index 2
+21:55
+will go to negative this will become negative over here this becomes negative because they've
+22:01
+matched so when you're comparing when you're comparing either of index 1 becomes negative or either of
+22:09
+index 2 becomes negative what does negative signify what does negative signify let's write
+22:16
+negative means end of the string
+22:23
+negative means end of the string are very simple guys if if
+22:31
+f of 2 means string 0 to 2 negative will mean end of the string so can i say can i say
+22:38
+if at any moment index 1 is lesser than 0
+22:43
+or index 2 is lesser than 0 i can say it's the end of string if it's
+22:48
+the end of the string what is the longest length 0 was the longest length zero guys
+22:56
+so i can say this is zero and it can easily return either this goes negative or this goes negative
+23:02
+you don't have anything to compare so the returning length will be zero this is how the recursive
+23:09
+code will look like now in order to get more clarity what i'll do is i'll take this example and try to do a recursion
+23:16
+tree so that it gets clear on you like on a crystal clear method ced okay where
+23:22
+are we we were here we were here okay what did uh the first step what will the first step be
+23:27
+one plus perfect and we'll call the function so over here it will be something like
+23:33
+zero one two zero one two the function call will be for f of two right what will be the next function called
+23:39
+plus one on f of one one which will be a c and c e f of one one means a c and c e
+23:46
+so a c is here and e is here are they matching no so there will be two split calls
+23:52
+there will be two split calls let's do the two split calls so if i do the two split calls it will
+23:59
+be plus zero and f of 0 1 will be one split call
+24:09
+and f of 1 0 will be another split call basically
+24:14
+you reduce 1 or you reduce this one that's what you did right that's what you did you either
+24:20
+reduce this or you either reduce this so a split of one of zero or a split of one
+24:26
+of zero will happen okay so what does this signify zero of one a c e and this signifies ac
+24:33
+and c perfect we are standing over here we are standing over here we are standing over here and we are standing
+24:38
+over here okay so this recursion will be solved at first and then this recursion will be solved at first you are
+24:44
+understanding right f of two two will call f of one one f of one one will call
+24:49
+this and call this and take the max of this and the max of this so f of zero one what will happen
+24:55
+a e are not matching then they are nowhere matching a and e
+25:02
+are nowhere magic so what will happen again two split calls will happen if they're not matching two split calls and
+25:08
+what will be for the split code it will go to minus one comma 1 what will happen to the split call it
+25:15
+will go to f of 0 0 f of 0 0 understand 0 is a split 1 is so basically you
+25:23
+reduce so over here it gets reduced to nothing by c e
+25:29
+and over here it gets reduced to a by c why because you're moving this guy so a
+25:35
+by c is what it reduces to okay again what will this return
+25:40
+negative this guy returns 0 a of c if you go on solving this what
+25:47
+will happen again 2 split calls f of minus 1 comma
+25:53
+1 and f of 0 comma 0 or rather this will be actually 0 so f
+25:58
+of 0 comma minus 1
+26:04
+right so this will also return a 0 because of negative because of negative this will also return zero so f of zero
+26:10
+one called those guys and it got zero and zero so this guy actually got a zero so
+26:17
+this guy will return a zero knife of one zero what will happen let's analyze the wire what will happen
+26:24
+c and c matches so one f of
+26:29
+both will reduce zero and minus one so both will reduce zero will reduce to minus one one will
+26:35
+reduce to zero because c is done c is done so you move this to here and this is over so one plus this what is this
+26:42
+negative so this sky will return zero so one plus zero this guy's value is one
+26:49
+this guy's value is zero so f of one one called both the guys
+26:54
+one guy gave him zero the other guy gave him one which one will he take he will take one the max of both the guys
+27:02
+over here we had a plus one so plus one and plus 1 f of 2 2 gives you 2 which is
+27:08
+the answer f 2 2 gives you 2 which is the answer and eventually cd is the
+27:14
+string which is the longest common subsequence so you got the answer so you saw the recursion tree working perfectly
+27:20
+and it did give you the answer very straightforward in all the comparison of string problems
+27:25
+if they're matching you just take both of them back and if they're not matching you take either one string you'll shrink
+27:32
+one string or you shrink the other string and try to do a comparison and if
+27:37
+you're able to do this you can actually solve any problem on string comparisons if you
+27:42
+can understand the movement of strings fine enough so what are we doing as of now we are
+27:50
+actually doing recursion and we know we are applying possibilities right so
+27:57
+the possibilities since you're trying out all all the recursions it's going to be 2 to the power
+28:03
+n subsequences of this guy m subsequences of the other guy because
+28:08
+you're trying out subsequences like if you carefully observe you are trying out subsequences ac
+28:13
+ac you're trying out subsequences to the n subsequence of the first string to the power m subsequence of the other string
+28:20
+so that will be like near about exponential which is uh definitely uh something
+28:26
+which we don't want and we want this to be optimized we want this to be optimized
+28:32
+correct and how do you optimize this you have to see if there are overlapping sub
+28:38
+problems because if there are overlapping sub problems we can apply
+28:45
+memo iation i have already told you this in all the previous lectures we can apply memo ios let's see if there are
+28:52
+overlapping sub problems in this particular problem f 2 2 was there f one one was there f of zero one was there if
+28:59
+a one zero was there f of zero zero was there f of minus one it's a very small
+29:05
+set to see but if you take bigger examples you will see like these guys
+29:11
+getting repeated somewhere over here or similar like you can see over here there's one state repeated f of 0 minus
+29:17
+1 is repeated here also also you see both the states are repeated and that's a base case that's okay but you will see
+29:24
+if you take a bigger example you will see states being repeated you can take a bigger set of string and you will see
+29:30
+that the states are repeated so what does f of
+29:36
+f of i j state means it says lcs of a string
+29:42
+from 0 to i and a string 0 to j that's what it represents right
+29:48
+lcs of a string 1 0 to i and 0 to j in this they want the length so if
+29:55
+someone again comes up and asks you the same question why do you want to pre-compute why do you want to recompute
+30:01
+thereby we can easily apply memory action what is the technique to apply memoration look out at the changing
+30:07
+parameters one is i the other is j
+30:12
+what is about i it's n what's about j it's m
+30:18
+thereby you can say n cross m is what i will be requiring dp so you
+30:24
+can easily just declare a dp of n cross m
+30:30
+initialize everything to as minus 1 and you can just go back and add these lines over here this is the return
+30:37
+statement right so over here you can say okay fine i'll write dp of i j equal to this is a
+30:45
+return statement you will say okay final right over here and while whenever it enters
+30:51
+a very simple line of dp of ij is not equal to minus 1 and you return
+30:56
+dp of ij that's how you easily do it
+31:01
+that's what the function resembles so it's time to check out the code so we're given the string s and the string
+31:08
+dot t so really you can just give s dot size right and you can just give m equal
+31:13
+to t dots exponent and right here you can say return f off
+31:18
+you can n minus 1 that is what you did s and d perfect let's quickly write the function that we generally write ind f
+31:25
+int i intj make sure you pass the string by reference because
+31:30
+every time if you create a new string it might give you tle this is what you wrote this is what you wrote
+31:37
+return 0 if they're matching which is s of i equal to equal to t of j
+31:43
+then you're going to return 1 plus f of i minus one j minus one and an s and a t and they're
+31:50
+not matching you return the max of either both of them click and i minus one j
+31:55
+s and t or you just go one which is s comma t that's how the brute force will look and
+32:01
+obviously you need to optimize this by applying minimization so this is a supplementation over here which is dp of
+32:08
+n cross vector of int and m cross minus 1 please make sure you
+32:16
+pass the dp over here and deposit the dp right over here you can say vector of
+32:21
+vector and and dp and just pass on the dp over here you can just pass on the dp over here
+32:28
+you can also pass on the dp over here perfect and what i can say is okay fine the next thing that i'll do is
+32:34
+memorize let's quickly memorize this as a last thing you will see please
+32:40
+check if the state has been visited previously if this has been visited previously kindly return it and that's
+32:47
+what the code will look like hopefully it should run okay it has some issue okay uh db was
+32:52
+not declared in the scope okay it looks like vector has not been declared so what it says is you have to actually use
+32:59
+hash include bits s t d c plus plus dot h because vector has not been defined so you can
+33:05
+easily define this and after this i think it should be running fine fine it runs now we're getting an 100th
+33:11
+score so that's how the memorization technique will be now the next step will be tabulation because we have to
+33:16
+optimize the auxiliary stack space and the time complexity in order to solve this by memoration was we go of n cross
+33:24
+m which we took in order to solve this using memoration and the space complexity we took was n
+33:30
+cross m for the states storage in dp and big o of n plus m
+33:36
+in auxiliary stack space right now you might ask
+33:42
+y n plus m i'll give you an example a b and c d i'll ask you to draw the
+33:47
+recursion tree for lcs if remember in match in match it was one plus and in unmatch
+33:53
+you moved in two directions so this is unmatched so you move it two directions which is a by cd
+33:59
+and the other one is a b by c very obvious because you either eliminate this or you either eliminate this
+34:06
+again over here you again move in two directions because they do not match so you either eliminate a which makes it
+34:12
+cd or you either eliminate d which makes it a by c over here again in two directions you
+34:19
+either eliminate a or either eliminate c so
+34:24
+if you carefully observe one step two step
+34:30
+three step four so at max the depth is 4 length 2
+34:35
+plus length 2 because what we did was we deleted v
+34:41
+we deleted d we deleted c so alternative deletions if we do alternative deletions there can be
+34:48
+n deletions from string s1 there can be m deletions from string s2 thereby the
+34:53
+auxiliary stack space will go as n plus m and obviously as always i'm not a big
+34:58
+fan of n plus m so i'll have to omit this in order to omit this i have to
+35:04
+write the tabulation iterative bottom-up approach
+35:09
+whatever you can call it okay so bottom-up rules i've already told you what are the
+35:15
+rules copy the base case i've already told you the rules copy the
+35:21
+base case second write down the changing parameters in the opposite fashion perfect
+35:27
+third copy the records if you can follow these method i can guarantee that you can
+35:34
+write any of the tabulations of bottom up for any of the questions but copy the base case is
+35:41
+a bit tricky over here why because if you remember the code the code was i comma j
+35:47
+and it was something like i lesser than 0 or or j lesser than 0 and you return
+35:52
+0. so over here this was the base case right if you remember this was the base case
+36:00
+and in the base case i can be negative and usually we did see
+36:05
+yes usually we did see in the recursion tree if you remember the recursion i'll just take it to the recursion tree that we did
+36:11
+in the recursion tree the base the negative was minus one minus one minus one so we stopped at
+36:17
+minus one so we can't we can't write cases for minus one in base cases can you write for
+36:24
+minus one because how do you write dp of minus 1 that's not possible
+36:29
+that's not possible so what we do is we do a shifting of index very simple we do a shifting of index
+36:38
+we do a shifting of index in order to write tabulation
+36:44
+you can still write tabulation using this but i want you to teach this shifting of index
+36:49
+in order to write tabulation like without even shifting of index i can still write tabulation but that will
+36:55
+be a bit tricky so i'll not go that direction shifting of index so as of now
+37:02
+there was index 0 1 2 like minus 1 was the negative index 3 still on n minus 1
+37:08
+and we were calling these indexes like how did the function start the function call started from n minus 1 at m minus 1
+37:15
+and n minus 1 represented this index f of 0 represents this index f of 1
+37:20
+represents this index can i do a shifting can i do a right shift of the index and i say i will call
+37:27
+n comma n i will call n comma n yes i'll call this
+37:33
+but over here i'll say hey listen n means n minus one
+37:39
+okay f of one means zero and f of zero means
+37:45
+negative i shifted the index one right one right n means n minus one
+37:52
+one means zero zero means minus one i shifted it one right
+37:58
+okay makes sense so if you're shifting it one right if so can i say
+38:05
+f i j if you have shifted i j like initially i is n and j
+38:10
+initially i is n and j is m you have shifted it n is
+38:16
+actually n minus 1 1 is actually 0 so can i say can i say
+38:21
+that means every i that you're giving should be treated as i minus 1
+38:28
+and every g that you're giving should be treated as j minus 1 because that is the meaning because
+38:35
+as of now you're sending i and j in terms of one shifted index does make sense does make sense
+38:42
+so can i say instead of greater than 0
+38:48
+can i write this as i equal to equal to 0 because this signified i equal to minus 1 but
+38:56
+since i've shifted it can i write i equal to 0 yes and can i write instead of this j equal to equal to 0 i can the
+39:03
+base case has been changed if i take you back to the code over here instead of n minus 1 i can
+39:10
+write n m minus 1 i can write m and over here i can write
+39:15
+equal to equal to and in the g also i can write equal to equal to but what's the other changes
+39:23
+everything stays same states being called same you're doing a string comparison but i means i minus 1
+39:30
+j means j minus 1 changed and now if i run this code does this run
+39:36
+same it will why will it because you've just shifted it okay it's giving run time error why
+39:42
+does it give run camera because the dp that you've declared is of nm and you're now using the states of nm so just make
+39:48
+sure you declare a dp of extra size m plus one and now you've done a shifting
+39:53
+of index one right and it does work fine so okay so the base case has been now
+40:00
+the base case has changed what is the base case law the base case is now very simple it
+40:06
+states if i is equal to equal to zero or j is equal to equal to zero we are returning zero
+40:12
+how can i write this in simple layman terms okay what does i equal to zero means
+40:19
+it means any dp of zero and this guy can be anything because
+40:24
+this is j j can be anything and what does this mean i can be anything
+40:30
+but this guy has to be 0 right and what can be the possible values of j
+40:36
+anything from 0 to n minus 1 what can the possible values of i anything from 0 to n minus 1 loop it
+40:42
+the base case are very simple j can be anything from 0 to m minus 1
+40:47
+and dp of 0 and j will be 0 this is for this one
+40:53
+and for this one is this i can be anything from 0 to n minus 1
+40:58
+and dp of i comma 0 is equal to 0 base case written by shifting writing
+41:06
+shifting indexes by one base case has been written perfect
+41:11
+for the next write down both these guys in opposite fashion in opposite fashion okay so the
+41:20
+moment i shifted it the recursion was taking uh i
+41:25
+from n to zero and j from m to zero
+41:34
+top down top down these are the base cases what is tabulation bottom up you go up
+41:42
+so 1 to n y naught 0 to n because 0 is the base case which has already been written
+41:48
+so one to n what about j opposite done
+41:54
+next copy the request what are you waiting for just go back and copy the reference and you'll be able to easily
+42:00
+write the tabulation format of lcs easily so what i'll do is i'll go
+42:05
+back and try to write the tabulation format okay so we have this guy that's perfect let's just format this and try to write
+42:11
+this so if you remember it was i equal to 0 or rather yeah i j equal to 0 was the
+42:17
+first one j equal to 0 and j less than m but then now it will go jl this
+42:24
+dp of 0 and j is perfect and similarly i can go as uh
+42:32
+zero till n and you can go as dp of i and zero as
+42:38
+zero perfect and similarly for loops can go as i equal to 1 i
+42:44
+lesser than equal to i plus plus similarly uh the j loop can also go in in a similar fashion of int j equal to 1
+42:52
+j less than equal to m j plus plus and you can just copy paste yes just make sure you copy is the same thing
+43:00
+just instead of written just remove written yeah just remove it and this copy is the same thing exactly
+43:07
+same thing and over here just return db of n
+43:12
+and m and remove this and what you can do is you can also remove this portion and instead of f
+43:19
+just make sure you write dp of i minus 1 j perfect
+43:27
+and over here you can write max of dp of i minus 1
+43:33
+j and again you can just remove this portion
+43:39
+and the comma of dp of i and j minus one and again please make sure you remove this
+43:45
+yeah that's what you it will be so if i now try to run this uh probably should run
+43:51
+if i've not done syntax mistakes again the hash include missing
+43:57
+okay it's giving us a wrong answer why is that so you check out why is this giving us a wrong answer and then we'll get started
+44:04
+so why did this give us a wrong answer because in the recursion if this if executed it went back from there over
+44:11
+here you have to just make sure you write an else okay just make sure you add an else because it will not return in recursion
+44:17
+this line was not executed in for loops it will be so just make sure either it is matching or not matching it is
+44:24
+running fine now you can just go across and submit so can we do a space
+44:29
+optimizations yes i have always told you if there is a scope of i minus 1 which
+44:34
+means previous row i minus 1 which means previous row you can always i repeat you can always
+44:41
+space optimize the same portion so what you do is instead of this just make sure you have a
+44:48
+previous of m plus one comma zero and a curve of m plus one comma zero
+44:55
+and over here this will go as this is the zeroth guy so what i'm
+45:01
+basically saying is okay for any zero what will happen so this is dp of zero right so you can say previous
+45:07
+and will this be there will the column be there no there's no need of column so you just omit this for the first row
+45:13
+every one is zero right so that's what you've done over here just make sure instead of dp of i minus one that's
+45:18
+previous over here just make sure instead of dp of i minus one it's previous
+45:24
+over here this is fine instead of dp will be curved if you have i it will be car just make sure it has curve
+45:31
+and over engine of dpi this will be curved instead of dpi this will be curve
+45:36
+perfect and just right after this occur equal to previous and over here you'll just return the previous guy
+45:42
+occur whatever you wish to this is fine yeah this should look fine so now you can try submitting this and you will see
+45:48
+that this is also not running fine why okay forgot to have a
+45:54
+colon so if i give a colon just previous column previous car concept and uh okay okay
+46:02
+okay so the issue was previous equal to car will be uh not curry call to previous my bad okay so if i just give it a submit i
+46:08
+should be running fine now yeah should run if i give it a summit this will definitely run so guys i hope
+46:16
+you have understood how i took a memoization solution and since we were having problem in tabulation i shifted
+46:22
+it by right so that we do not have negative integers or negative indexes in base cases and after that i just simply
+46:28
+converted that into a tabulated once i converted that into tabulated the space optimization is an extension of whatever
+46:34
+i've taught in the previous dp lectures so if you haven't seen the previous dp lectures it's a job
+46:39
+you should definitely go and watch it because you're missing on space optimization which is a very very important trick so guys i hope i hope i
+46:45
+have i was able to make you understand lcs just in case i was please please please make sure you like this video if
+46:51
+you're new to this channel please do consider subscribing and yeah to continue automation please make sure right understood in the comment section
+46:56
+and with us let's wrap up this video and we do the next one till then bye take care whenever your heart is
+47:04
+[Music]

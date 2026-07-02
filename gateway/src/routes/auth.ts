@@ -57,6 +57,10 @@ router.post("/register", async (req: Request, res: Response) => {
         },
       });
 
+      await tx.folder.create({
+        data: { name: "General", organizationId: org.id },
+      });
+
       return { user, organizationId: org.id, orgName: org.name };
     });
 
@@ -101,6 +105,10 @@ router.post("/create-org", authMiddleware, async (req: Request, res: Response) =
 
     await prisma.organizationMember.create({
       data: { userId: req.user!.userId, organizationId: org.id, role: "SUPER_ADMIN" },
+    });
+
+    await prisma.folder.create({
+      data: { name: "General", organizationId: org.id },
     });
 
     const token = generateToken({
@@ -316,6 +324,7 @@ router.delete("/members/:userId", authMiddleware, requireRole("ADMIN", "SUPER_AD
       return;
     }
 
+    await prisma.teamMember.deleteMany({ where: { userId: targetUserId, organizationId: req.user!.organizationId } });
     await prisma.organizationMember.delete({ where: { id: membership.id } });
     res.json({ message: "Member removed from organization" });
   } catch (err) {

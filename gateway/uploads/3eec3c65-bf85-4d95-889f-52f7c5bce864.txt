@@ -1,0 +1,5 @@
+NexusIQ is an AI-powered enterprise knowledge base.
+It allows teams to upload documents, search across their knowledge base,
+and get AI-generated answers. The platform supports PDF, DOCX, PPTX,
+and Markdown files. Documents are parsed, chunked, and embedded using
+sentence-transformers, then stored in a FAISS vector index for fast similarity search.

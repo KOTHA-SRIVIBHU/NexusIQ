@@ -18,6 +18,9 @@ model Organization {
   folders       Folder[]
   folderPerms   FolderPermission[]
   invitations   Invitation[]
+  teams         Team[]
+  roleRequests  RoleRequest[]
+  documents     Document[]
 }
 
 enum Role {
@@ -35,7 +38,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships OrganizationMember[]
+  memberships      OrganizationMember[]
+  teamMemberships  TeamMember[]
+  sentTeamRequests TeamRequest[]       @relation("SentTeamRequests")
+  handledTeamReqs  TeamRequest[]       @relation("HandledTeamRequests")
+  sentRoleRequests RoleRequest[]       @relation("SentRoleRequests")
+  handledRoleReqs  RoleRequest[]       @relation("HandledRoleRequests")
+  notifications    Notification[]
+  uploadedDocuments Document[]         @relation("UploadedDocuments")
 }
 
 model OrganizationMember {
@@ -56,6 +66,10 @@ model Folder {
   name           String
   organizationId String
   parentId       String?
+  teamId         String?
+  minViewRole    Role     @default(VIEWER)
+  minEditRole    Role     @default(EDITOR)
+  isPrivate      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -63,6 +77,9 @@ model Folder {
   parent       Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id])
   children     Folder[]     @relation("FolderHierarchy")
   permissions  FolderPermission[]
+  documents    Document[]
+  logs         FolderLog[]
+  team         Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
 }
 
 model Invitation {
@@ -81,6 +98,134 @@ model Invitation {
   @@index([email])
 }
 
+enum TeamRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model Team {
+  id             String       @id @default(uuid())
+  name           String
+  description    String       @default("")
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members       TeamMember[]
+  incomingReqs  TeamRequest[] @relation("ToTeam")
+  outgoingReqs  TeamRequest[] @relation("FromTeam")
+  folders       Folder[]
+
+  @@unique([name, organizationId])
+}
+
+enum TeamRole {
+  LEAD
+  MEMBER
+}
+
+model TeamMember {
+  id             String   @id @default(uuid())
+  role           TeamRole @default(MEMBER)
+  userId         String
+  teamId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+model TeamRequest {
+  id             String            @id @default(uuid())
+  userId         String
+  fromTeamId     String?
+  toTeamId       String
+  reason         String            @default("")
+  status         TeamRequestStatus @default(PENDING)
+  adminId        String?
+  adminNote      String?
+  expiresAt      DateTime
+  createdAt      DateTime          @default(now())
+
+  user     User  @relation("SentTeamRequests", fields: [userId], references: [id], onDelete: Cascade)
+  fromTeam Team? @relation("FromTeam", fields: [fromTeamId], references: [id])
+  toTeam   Team  @relation("ToTeam", fields: [toTeamId], references: [id])
+  admin    User? @relation("HandledTeamRequests", fields: [adminId], references: [id])
+}
+
+enum RoleRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model RoleRequest {
+  id             String            @id @default(uuid())
+  userId         String
+  organizationId String
+  currentRole    Role
+  requestedRole  Role
+  reason         String            @default("")
+  status         RoleRequestStatus @default(PENDING)
+  adminId        String?
+  adminNote      String?
+  expiresAt      DateTime
+  createdAt      DateTime          @default(now())
+
+  user         User         @relation("SentRoleRequests", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  admin        User?        @relation("HandledRoleRequests", fields: [adminId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum DocumentStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Document {
+  id             String         @id @default(uuid())
+  originalName   String
+  mimeType       String
+  size           Int
+  status         DocumentStatus @default(UPLOADING)
+  storagePath    String
+  errorMessage   String?
+  pageCount      Int?
+  tokenCount     Int?
+  organizationId String
+  uploadedById   String
+  folderId       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedBy   User         @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  folder       Folder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
 model FolderPermission {
   id             String @id @default(uuid())
   role           Role   @default(VIEWER)
@@ -91,4 +236,17 @@ model FolderPermission {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([folderId, organizationId])
+}
+
+model FolderLog {
+  id           String   @id @default(uuid())
+  folderId     String
+  action       String
+  documentId   String?
+  documentName String?
+  userId       String
+  userName     String
+  createdAt    DateTime @default(now())
+
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
 }
