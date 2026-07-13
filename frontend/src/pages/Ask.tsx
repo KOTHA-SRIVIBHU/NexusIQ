@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { MessageSquare, Loader2, AlertCircle, Sparkles, FileText, ExternalLink } from 'lucide-react';
+import { MessageSquare, Loader2, AlertCircle, Sparkles, FileText, ExternalLink, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Citation {
@@ -14,11 +14,14 @@ function getToken() { return localStorage.getItem('nexusiq_token'); }
 
 export default function AskPage() {
   const [query, setQuery] = useState('');
+  const [lastQuery, setLastQuery] = useState('');
   const [answer, setAnswer] = useState('');
   const [citations, setCitations] = useState<Citation[]>([]);
   const [asking, setAsking] = useState(false);
   const [asked, setAsked] = useState(false);
   const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState<'UP' | 'DOWN' | null>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   const handleAsk = async (e: FormEvent) => {
     e.preventDefault();
@@ -30,6 +33,7 @@ export default function AskPage() {
     setAnswer('');
     setCitations([]);
     setAsked(true);
+    setFeedback(null);
 
     try {
       const res = await fetch('/api/ask', {
@@ -39,6 +43,7 @@ export default function AskPage() {
       });
       if (!res.ok) { const err = await res.json().catch(() => ({ error: 'Ask failed' })); throw new Error(err.error); }
       const data = await res.json();
+      setLastQuery(q);
       setAnswer(data.answer || '');
       setCitations(data.citations || []);
     } catch (err) {
@@ -46,6 +51,21 @@ export default function AskPage() {
     } finally {
       setAsking(false);
     }
+  };
+
+  const handleFeedback = async (value: 'UP' | 'DOWN') => {
+    if (feedback || submittingFeedback) return;
+    setSubmittingFeedback(true);
+    try {
+      const res = await fetch('/api/ask/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ query: lastQuery, answer, citations, feedback: value }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setFeedback(value);
+    } catch { /* ignore */ }
+    finally { setSubmittingFeedback(false); }
   };
 
   return (
@@ -116,6 +136,32 @@ export default function AskPage() {
             </div>
             <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
               {answer}
+            </div>
+            <div className="flex items-center gap-2 pt-4 mt-4 border-t border-gray-100">
+              <span className="text-xs text-gray-400 mr-1">Was this helpful?</span>
+              <button
+                onClick={() => handleFeedback('UP')}
+                disabled={feedback !== null}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  feedback === 'UP' ? 'bg-green-100 text-green-700' :
+                  feedback ? 'text-gray-300 cursor-not-allowed' :
+                  'text-gray-400 hover:bg-green-50 hover:text-green-600'
+                }`}
+              >
+                <ThumbsUp className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleFeedback('DOWN')}
+                disabled={feedback !== null}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  feedback === 'DOWN' ? 'bg-red-100 text-red-700' :
+                  feedback ? 'text-gray-300 cursor-not-allowed' :
+                  'text-gray-400 hover:bg-red-50 hover:text-red-600'
+                }`}
+              >
+                <ThumbsDown className="w-4 h-4" />
+              </button>
+              {submittingFeedback && <Loader2 className="w-3.5 h-3.5 text-gray-400 animate-spin" />}
             </div>
           </div>
 

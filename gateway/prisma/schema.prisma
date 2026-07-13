@@ -21,6 +21,7 @@ model Organization {
   teams         Team[]
   roleRequests  RoleRequest[]
   documents     Document[]
+  askFeedback   AskFeedback[]
 }
 
 enum Role {
@@ -46,6 +47,7 @@ model User {
   handledRoleReqs  RoleRequest[]       @relation("HandledRoleRequests")
   notifications    Notification[]
   uploadedDocuments Document[]         @relation("UploadedDocuments")
+  askFeedback       AskFeedback[]
 }
 
 model OrganizationMember {
@@ -249,4 +251,27 @@ model FolderLog {
   createdAt    DateTime @default(now())
 
   folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+}
+
+enum Feedback {
+  UP
+  DOWN
+}
+
+model AskFeedback {
+  id             String   @id @default(uuid())
+  query          String
+  rewrittenQuery String?
+  answer         String
+  citations      String
+  feedback       Feedback
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
 }
