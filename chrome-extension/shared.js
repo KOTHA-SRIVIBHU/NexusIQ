@@ -1,5 +1,6 @@
 const DEFAULTS = {
   gatewayUrl: 'http://localhost:4000',
+  token: '',
 };
 
 async function getConfig() {
