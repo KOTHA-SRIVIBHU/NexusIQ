@@ -17,7 +17,7 @@ async function api(method, path, body) {
         } else if (response.error) {
           reject(new Error(response.error));
         } else {
-          resolve(response.data);
+          resolve(response);
         }
       }
     );
@@ -42,12 +42,6 @@ async function isLoggedIn() {
 async function getFolders() {
   const data = await api('GET', '/api/folders');
   return data.folders || [];
-}
-
-async function uploadDocument(file, folderId) {
-  // file is a File/Blob — pass via message to background
-  const text = await file.text();
-  return await api('POST', '/api/documents/upload', { _fileText: text, _fileName: file.name, _fileType: file.type, folderId });
 }
 
 async function searchDocuments(query, topK) {

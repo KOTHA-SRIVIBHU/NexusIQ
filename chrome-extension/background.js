@@ -112,13 +112,13 @@ async function handleApi({ method, path, body, isFormData }) {
 
   let fetchBody = body;
 
-  if (isFormData && body?._fileText) {
+  if (body?._fileText) {
     const fd = new FormData();
     const blob = new Blob([body._fileText], { type: body._fileType || 'text/plain' });
     fd.append('file', blob, body._fileName || 'shared-content.txt');
     if (body.folderId) fd.append('folderId', body.folderId);
     fetchBody = fd;
-  } else if (body && !isFormData) {
+  } else if (body) {
     headers['Content-Type'] = 'application/json';
     fetchBody = JSON.stringify(body);
   }
