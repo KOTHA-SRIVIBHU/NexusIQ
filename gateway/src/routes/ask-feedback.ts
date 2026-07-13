@@ -31,3 +31,25 @@ askFeedbackRouter.post("/", authMiddleware, async (req: Request, res: Response) 
     res.status(500).json({ error: "Failed to record feedback" });
   }
 });
+
+askFeedbackRouter.get("/stats", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const orgId = req.user!.organizationId;
+
+    const [up, down, recent] = await Promise.all([
+      prisma.askFeedback.count({ where: { organizationId: orgId, feedback: "UP" } }),
+      prisma.askFeedback.count({ where: { organizationId: orgId, feedback: "DOWN" } }),
+      prisma.askFeedback.findMany({
+        where: { organizationId: orgId },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: { query: true, feedback: true, createdAt: true },
+      }),
+    ]);
+
+    res.json({ up, down, total: up + down, recent });
+  } catch (err) {
+    console.error("Feedback stats error:", err);
+    res.status(500).json({ error: "Failed to fetch feedback stats" });
+  }
+});

@@ -14,6 +14,7 @@ import FolderDetail from './pages/FolderDetail';
 import FolderLogs from './pages/FolderLogs';
 import FolderFiles from './pages/FolderFiles';
 import AnalyticsPage from './pages/Analytics';
+import FeedbackPage from './pages/Feedback';
 import AcceptInvite from './pages/AcceptInvite';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="folders/:id/logs" element={<FolderLogs />} />
           <Route path="folders/:id" element={<FolderDetail />} />
           <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="feedback" element={<FeedbackPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

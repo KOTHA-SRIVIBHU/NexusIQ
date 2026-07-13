@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LogOut, Brain, Upload, Search, BarChart3, Users, LayoutDashboard, Building2, ChevronDown, Plus, X, ClipboardList, Users2, FolderOpen, FileText, CheckCircle, Loader2, MessageSquare } from 'lucide-react';
+import { LogOut, Brain, Upload, Search, BarChart3, Users, LayoutDashboard, Building2, ChevronDown, Plus, X, ClipboardList, Users2, FolderOpen, FileText, CheckCircle, Loader2, MessageSquare, ThumbsUp } from 'lucide-react';
 import NotificationBell from '../components/NotificationBell';
 import GlobalSearch from '../components/GlobalSearch';
 
@@ -16,6 +16,7 @@ const navItems = [
   { path: '/folders', label: 'Folders', icon: FolderOpen },
 
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '/feedback', label: 'AI Feedback', icon: ThumbsUp },
 ];
 
 function getToken() { return localStorage.getItem('nexusiq_token'); }
