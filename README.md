@@ -14,9 +14,9 @@ The Chrome extension lives in a separate repository.
 
 ## Features
 
-- **Document ingestion** — Upload PDF, DOCX, PPTX, MD, TXT (50MB limit). Async processing via BullMQ with in-memory fallback when Redis is unavailable.
-- **Semantic search** — Documents are chunked, embedded with `all-MiniLM-L6-v2`, and indexed in FAISS. Search across your entire knowledge base with relevance-ranked results.
-- **AI Q&A** — Ask natural-language questions. The system retrieves the most relevant document chunks and answers via Groq LLMs with source citations.
+- **Document ingestion** — Upload PDF, DOCX, PPTX, MD, TXT (50MB limit). Async processing via BullMQ with in-memory fallback when Redis is unavailable. Real-time status badges (Uploading → Processing → Ready) via polling.
+- **Semantic search** — Documents are chunked, embedded with `all-MiniLM-L6-v2`, and indexed in FAISS. Search across your entire knowledge base with relative relevance scores.
+- **AI Q&A** — Ask natural-language questions. Query rewriting (llama-3.1-8b) → FAISS best-doc identification → full-document retrieval → answer via Groq LLMs with source citations and relevance scores.
 - **Role-based access** — SUPER_ADMIN > ADMIN > EDITOR > VIEWER hierarchy. Folder-level permissions (`minViewRole`/`minEditRole`). Team folders with public/private visibility.
 - **Multi-organization** — Create and switch between orgs. Invite users via email. Each org has isolated documents, teams, and permissions.
 - **Teams** — CRUD teams, add/remove members, change requests with admin approval workflow.
