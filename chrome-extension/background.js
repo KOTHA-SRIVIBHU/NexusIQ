@@ -95,3 +95,36 @@ chrome.commands.onCommand.addListener(async (command) => {
     });
   }
 });
+
+// API proxy: popup → background → gateway
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'api') {
+    handleApi(request).then(sendResponse).catch((err) => sendResponse({ error: err.message }));
+    return true; // keep channel open for async response
+  }
+});
+
+async function handleApi({ method, path, body, isFormData }) {
+  const { gatewayUrl, token } = await getConfig();
+  const url = `${gatewayUrl}${path}`;
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let fetchBody = body;
+
+  if (isFormData && body?._fileText) {
+    const fd = new FormData();
+    const blob = new Blob([body._fileText], { type: body._fileType || 'text/plain' });
+    fd.append('file', blob, body._fileName || 'shared-content.txt');
+    if (body.folderId) fd.append('folderId', body.folderId);
+    fetchBody = fd;
+  } else if (body && !isFormData) {
+    headers['Content-Type'] = 'application/json';
+    fetchBody = JSON.stringify(body);
+  }
+
+  const res = await fetch(url, { method, headers, body: fetchBody });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || data.detail || 'Request failed');
+  return data;
+}

@@ -34,8 +34,9 @@ async function init() {
       opt.textContent = f.team ? `${f.team.name} / ${f.name}` : f.name;
       folderSelect.appendChild(opt);
     }
-  } catch {
+  } catch (err) {
     folderSelect.innerHTML = '<option value="">Failed to load folders</option>';
+    console.error('Folder fetch error:', err);
   }
 }
 
@@ -48,9 +49,12 @@ uploadBtn.addEventListener('click', async () => {
 
   try {
     const name = fileNameInput.value.trim() || 'shared-content.txt';
-    const blob = new Blob([shareData.text], { type: 'text/plain' });
-    const file = new File([blob], name, { type: 'text/plain' });
-    await uploadDocument(file, folderSelect.value || undefined);
+    await api('POST', '/api/documents/upload', {
+      _fileText: shareData.text,
+      _fileName: name,
+      _fileType: 'text/plain',
+      folderId: folderSelect.value || undefined,
+    });
     uploadStatus.className = 'text-sm success';
     uploadStatus.textContent = 'Uploaded successfully! Document is being processed.';
     uploadBtn.textContent = 'Done';

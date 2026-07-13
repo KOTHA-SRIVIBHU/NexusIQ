@@ -8,26 +8,20 @@ async function getConfig() {
 }
 
 async function api(method, path, body) {
-  const { gatewayUrl, token } = await getConfig();
-  const url = `${gatewayUrl}${path}`;
-  const headers = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const opts = { method, headers };
-  if (body) {
-    if (body instanceof FormData) {
-      // don't set Content-Type for FormData — browser sets it with boundary
-      opts.body = body;
-    } else {
-      headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(body);
-    }
-  }
-
-  const res = await fetch(url, opts);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || data.detail || 'Request failed');
-  return data;
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { action: 'api', method, path, body: body instanceof FormData ? null : body, isFormData: body instanceof FormData },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else if (response.error) {
+          reject(new Error(response.error));
+        } else {
+          resolve(response.data);
+        }
+      }
+    );
+  });
 }
 
 async function login(email, password) {
@@ -51,10 +45,9 @@ async function getFolders() {
 }
 
 async function uploadDocument(file, folderId) {
-  const fd = new FormData();
-  fd.append('file', file);
-  if (folderId) fd.append('folderId', folderId);
-  return await api('POST', '/api/documents/upload', fd);
+  // file is a File/Blob — pass via message to background
+  const text = await file.text();
+  return await api('POST', '/api/documents/upload', { _fileText: text, _fileName: file.name, _fileType: file.type, folderId });
 }
 
 async function searchDocuments(query, topK) {
