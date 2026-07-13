@@ -7,6 +7,7 @@ interface Citation {
   documentName: string;
   folderId: string | null;
   text: string;
+  score?: number;
 }
 
 function getToken() { return localStorage.getItem('nexusiq_token'); }
@@ -127,11 +128,22 @@ export default function AskPage() {
                 {citations.map((c, i) => (
                   <div key={i} className="bg-white rounded-lg border border-gray-200 p-3">
                     <div className="mb-1.5">
-                      <Link to={c.folderId ? `/folders/${c.folderId}` : '#'} className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" />
-                        {c.documentName}
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link to={c.folderId ? `/folders/${c.folderId}` : '#'} className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5" />
+                          {c.documentName}
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                        {c.score != null && (
+                          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                            c.score >= 80 ? 'bg-green-100 text-green-700' :
+                            c.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-500'
+                          }`}>
+                            {c.score}%
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-2">{c.text}</p>
                   </div>

@@ -73,6 +73,7 @@ export default function FolderDetail() {
   const [editEditRole, setEditEditRole] = useState('');
   const [editIsPrivate, setEditIsPrivate] = useState(false);
   const [saving, setSaving] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -86,6 +87,20 @@ export default function FolderDetail() {
   }, [id]);
 
   useEffect(() => { fetchFolder(); }, [fetchFolder]);
+
+  useEffect(() => {
+    if (!folder) return;
+    const hasProcessing = folder.documents.some((d) => d.status === 'UPLOADING' || d.status === 'PROCESSING');
+    if (hasProcessing) {
+      if (!pollRef.current) pollRef.current = setInterval(fetchFolder, 2000);
+    } else {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    }
+  });
+
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
 
   const handleUpload = async (files: FileList) => {
     setUploading(true);

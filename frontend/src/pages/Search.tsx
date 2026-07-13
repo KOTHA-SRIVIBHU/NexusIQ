@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 interface SearchResult {
   chunk: { index: number; text: string; page: number | null };
   distance: number;
+  score: number;
   documentId: string;
   documentName: string;
 }
@@ -115,8 +116,12 @@ export default function SearchPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-medium text-gray-900 truncate">{r.documentName}</span>
-                    <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full whitespace-nowrap">
-                      Score: {(1 - r.distance / 10).toFixed(2)}
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium ${
+                      r.score >= 80 ? 'bg-green-100 text-green-700' :
+                      r.score >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {r.score}%
                     </span>
                     {r.chunk.page != null && (
                       <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full whitespace-nowrap flex items-center gap-1">

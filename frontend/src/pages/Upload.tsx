@@ -54,6 +54,8 @@ export default function Upload() {
   const folderRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const fetchDocs = useCallback(async () => {
     try { const d = await api('/api/documents'); setDocuments(d.documents); } catch { /* ignore */ }
     try { const f = await api('/api/folders'); setFolders(f.folders); } catch { /* ignore */ }
@@ -62,19 +64,21 @@ export default function Upload() {
   useEffect(() => { fetchDocs(); }, []);
 
   useEffect(() => {
+    const hasProcessing = documents.some((d) => d.status === 'UPLOADING' || d.status === 'PROCESSING');
+    if (hasProcessing) {
+      if (!pollRef.current) pollRef.current = setInterval(fetchDocs, 2000);
+    } else {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    }
+  });
+
+  useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (folderRef.current && !folderRef.current.contains(e.target as Node)) setFolderOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    return () => { document.removeEventListener('mousedown', handleClick); if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
-
-  useEffect(() => {
-    const hasProcessing = documents.some((d) => d.status === 'UPLOADING' || d.status === 'PROCESSING');
-    if (!hasProcessing) return;
-    const interval = setInterval(fetchDocs, 2000);
-    return () => clearInterval(interval);
-  }, [documents, fetchDocs]);
 
   const handleUpload = async (files: FileList) => {
     setError('');

@@ -183,6 +183,14 @@ async def search_all(req: SearchAllRequest):
         all_results.sort(key=lambda x: x["distance"])
         all_results = all_results[: req.topK]
 
+        if all_results:
+            min_d = all_results[0]["distance"]
+            max_d = all_results[-1]["distance"]
+            d_range = max_d - min_d if max_d > min_d else 1.0
+            for r in all_results:
+                score = 100 * (1 - (r["distance"] - min_d) / d_range)
+                r["score"] = round(score, 1)
+
         return {"results": all_results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -232,7 +240,23 @@ async def ask_question(req: AskRequest):
 
         all_results.sort(key=lambda x: x["distance"])
 
+        best_distances = {}
+        for r in all_results:
+            did = r["documentId"]
+            if did not in best_distances or r["distance"] < best_distances[did]:
+                best_distances[did] = r["distance"]
+
+        scores_map = {}
+        if best_distances:
+            vals = sorted(best_distances.values())
+            min_d = vals[0]
+            max_d = vals[-1]
+            d_range = max_d - min_d if max_d > min_d else 1.0
+            for did, dist in best_distances.items():
+                scores_map[did] = round(100 * (1 - (dist - min_d) / d_range), 1)
+
         best_doc_id = all_results[0]["documentId"] if all_results else None
+        best_score = scores_map.get(best_doc_id, 100) if best_doc_id else 100
 
         if best_doc_id:
             full_meta = load_meta(best_doc_id)
@@ -250,6 +274,8 @@ async def ask_question(req: AskRequest):
             context_parts.append(f"[Source: {r['documentId']}]\n{text}")
             citations.append({
                 "documentId": r["documentId"],
+                "score": best_score,
+                "documentName": r["documentId"],
                 "text": text[:200],
             })
 

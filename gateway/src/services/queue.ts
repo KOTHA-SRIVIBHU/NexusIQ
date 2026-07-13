@@ -41,11 +41,17 @@ async function processInMemory(): Promise<void> {
   if (inMemoryProcessing) return;
   inMemoryProcessing = true;
 
-  for (const [id, job] of inMemoryJobs) {
-    if (job.status !== "waiting") continue;
-    job.status = "processing";
-    await processDocument(id);
-    job.status = "done";
+  while (true) {
+    let found = false;
+    for (const [id, job] of inMemoryJobs) {
+      if (job.status !== "waiting") continue;
+      found = true;
+      job.status = "processing";
+      await processDocument(id);
+      job.status = "done";
+      break;
+    }
+    if (!found) break;
   }
 
   inMemoryProcessing = false;
