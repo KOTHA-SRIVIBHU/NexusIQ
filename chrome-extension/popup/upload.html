@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Share to NexusIQ</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="popup-body">
+  <div class="card">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-4 5-2-2-4-3-4-5a4 4 0 0 1 4-4z"/><path d="M12 12v10"/><path d="M8 22h8"/></svg>
+      <h1>Share to NexusIQ</h1>
+    </div>
+
+    <div id="source-info" class="text-xs text-gray-500 mb-3"></div>
+
+    <div class="field">
+      <label for="folder-select">Folder</label>
+      <select id="folder-select">
+        <option value="">Loading folders...</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="file-name">Document name</label>
+      <input type="text" id="file-name" placeholder="my-document.txt" />
+    </div>
+
+    <div class="field">
+      <label>Content preview</label>
+      <pre id="content-preview" class="preview-box"></pre>
+    </div>
+
+    <button id="upload-btn" class="btn-primary">Upload to NexusIQ</button>
+    <p id="upload-status" class="hidden text-sm"></p>
+  </div>
+
+  <script src="../shared.js"></script>
+  <script src="upload.js"></script>
+</body>
+</html>

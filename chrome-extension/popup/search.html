@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>NexusIQ Search</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="popup-body">
+  <div class="card" style="min-height: 400px;">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-4 5-2-2-4-3-4-5a4 4 0 0 1 4-4z"/><path d="M12 12v10"/><path d="M8 22h8"/></svg>
+      <h1>NexusIQ</h1>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search your knowledge base..." autofocus />
+      <button id="search-btn" class="btn-primary">Search</button>
+    </div>
+
+    <div id="results" class="results-list"></div>
+    <p id="search-status" class="hidden text-xs text-gray-400 text-center mt-2"></p>
+
+    <div class="footer-links">
+      <a href="#" id="open-settings">Settings</a>
+      <a href="#" id="open-upload">Share current page</a>
+    </div>
+  </div>
+
+  <script src="../shared.js"></script>
+  <script src="search.js"></script>
+</body>
+</html>

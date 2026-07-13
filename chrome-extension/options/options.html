@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>NexusIQ Settings</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="options-page">
+  <div class="card">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-4 5-2-2-4-3-4-5a4 4 0 0 1 4-4z"/><path d="M12 12v10"/><path d="M8 22h8"/></svg>
+      <h1>NexusIQ</h1>
+    </div>
+    <p class="subtitle">Connect to your knowledge base</p>
+
+    <form id="settings-form">
+      <div class="field">
+        <label for="gateway-url">Gateway URL</label>
+        <input type="url" id="gateway-url" placeholder="http://localhost:4000" required />
+      </div>
+
+      <hr />
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password" />
+      </div>
+      <button type="submit" id="login-btn" class="btn-primary">Login</button>
+      <p id="login-error" class="error hidden"></p>
+    </form>
+
+    <div id="logged-in" class="hidden">
+      <div class="status-badge success">Connected</div>
+      <p class="text-sm" id="user-info"></p>
+      <button id="logout-btn" class="btn-secondary">Disconnect</button>
+    </div>
+  </div>
+
+  <script src="../shared.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
